@@ -84,6 +84,13 @@
   .cerrar-sheet {
     display:block; margin:16px auto 0; background:none; border:none; color:#8A7A74; font-size:13px; cursor:pointer;
   }
+  .qty-controls { display:flex; align-items:center; gap:10px; }
+  .qty-controls button {
+    width:30px; height:30px; border-radius:9px; border:1.5px solid var(--line); background:#fff;
+    font-size:16px; cursor:pointer; line-height:1;
+  }
+  .qty-controls button:disabled { opacity:.4; cursor:default; }
+  .qty-controls span { font-size:14px; font-weight:600; min-width:20px; text-align:center; }
 
   /* --- Barra de carrito flotante --- */
   .cart-bar {
@@ -203,17 +210,6 @@
     return item ? item.cantidad : 0;
   }
 
-  function quitarUnoDelCarrito(varianteId) {
-    let cart = leerCarrito();
-    const item = cart.find(function (i) { return i.variante_id === varianteId; });
-    if (!item) return;
-    item.cantidad -= 1;
-    if (item.cantidad <= 0) {
-      cart = cart.filter(function (i) { return i.variante_id !== varianteId; });
-    }
-    guardarCarrito(cart);
-  }
-
   // --- Cargar catálogo ---
   async function cargarCatalogo() {
     const { data, error } = await supabaseClient
@@ -302,7 +298,7 @@
       if (unSoloTono) {
         card.querySelector('.quick-add').addEventListener('click', function (e) {
           e.stopPropagation(); // que no se abra la ficha al usar el botón rápido
-          agregarAlCarrito(principal, 1);
+          cambiarCantidadCarrito(principal, 1);
         });
       }
       card.addEventListener('click', function () { abrirSheet(tonos); });
@@ -345,11 +341,11 @@
         '</div>';
 
       row.querySelector('.sumar-tono').addEventListener('click', function () {
-        agregarAlCarrito(v, 1);
+        cambiarCantidadCarrito(v, 1);
         abrirSheet(tonos); // re-render para mostrar la cantidad actualizada
       });
       row.querySelector('.restar-tono').addEventListener('click', function () {
-        quitarUnoDelCarrito(v.variante_id);
+        cambiarCantidadCarrito(v, -1);
         abrirSheet(tonos);
       });
       tonosEl.appendChild(row);
