@@ -94,7 +94,12 @@
     <div id="contenido"></div>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+  const SUPABASE_URL = "https://pvlpawwimdbxsvgggima.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_dqOJoYPxXWIQojgdxC6IKg_jE_jhTzh";
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
   // IMPORTANT: replace with the real WhatsApp number, country code
   // first, digits only (no +, no spaces, no dashes). Example for
   // Venezuela: "584141234567".
@@ -243,8 +248,9 @@
     document.getElementById('finalizarBtn').addEventListener('click', finalizarPedido);
   }
 
-  function finalizarPedido() {
+  async function finalizarPedido() {
     const statusEl = document.getElementById('formStatus');
+    const finalizarBtn = document.getElementById('finalizarBtn');
     const nombre = document.getElementById('clienteNombre').value.trim();
     const telefono = document.getElementById('clienteTelefono').value.trim();
     const entrega = document.querySelector('input[name="entrega"]:checked').value;
@@ -260,11 +266,34 @@
     }
 
     statusEl.textContent = '';
+    finalizarBtn.disabled = true;
+    finalizarBtn.textContent = 'Reservando tu pedido...';
 
     const cart = leerCarrito();
     const calculo = calcularCarrito(cart);
 
-    let mensaje = '¡Hola! Quiero hacer un pedido en Anew Canvas Store:\n\n';
+    // Reservamos el pedido de verdad en la base de datos antes de
+    // abrir WhatsApp, para que ese stock quede apartado y no se le
+    // venda dos veces a distintos clientes al mismo tiempo.
+    const { data: pedidoId, error } = await supabaseClient.rpc('crear_pedido', {
+      p_cliente_nombre: nombre,
+      p_cliente_telefono: telefono,
+      p_metodo_entrega: entrega,
+      p_direccion_envio: direccion || null,
+      p_items: cart.map(function (item) {
+        return { variante_id: item.variante_id, cantidad: item.cantidad };
+      })
+    });
+
+    finalizarBtn.disabled = false;
+    finalizarBtn.textContent = 'Finalizar pedido por WhatsApp';
+
+    if (error) {
+      statusEl.textContent = 'Uno de los productos de tu carrito ya no tiene suficiente stock disponible. Ajusta la cantidad e intenta de nuevo.';
+      return;
+    }
+
+    let mensaje = '¡Hola! Quiero hacer un pedido en Anew Canvas Store (#' + pedidoId + '):\n\n';
     cart.forEach(function (item, i) {
       const linea = calculo.lineas[i];
       mensaje += '• ' + item.cantidad + 'x ' + item.nombre + ' (' + (item.tono || 'Único') + ') — $' + linea.subtotal.toFixed(2) + '\n';
@@ -274,6 +303,8 @@
     mensaje += '\nTeléfono: ' + telefono;
     mensaje += '\nEntrega: ' + entrega;
     if (direccion) mensaje += '\nDirección/datos de envío: ' + direccion;
+
+    localStorage.removeItem('carrito'); // ya quedó reservado en el servidor
 
     const url = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(mensaje);
     window.location.href = url;
