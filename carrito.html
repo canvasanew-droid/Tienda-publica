@@ -262,7 +262,7 @@
     const cart = leerCarrito();
     const calculo = calcularCarrito(cart);
 
-    let mensaje = '¡Hola! Quiero hacer un pedido en A New Canvas Store:\n\n';
+    let mensaje = '¡Hola! Quiero hacer un pedido en Anew Canvas Store:\n\n';
     cart.forEach(function (item, i) {
       const linea = calculo.lineas[i];
       mensaje += '• ' + item.cantidad + 'x ' + item.nombre + ' (' + (item.tono || 'Único') + ') — $' + linea.subtotal.toFixed(2) + '\n';
