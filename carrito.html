@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-<title>Tu carrito — A New Canvas Store</title>
+<title>Tu carrito — Anew Canvas Store</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -45,6 +45,7 @@
 
   .item-row .precios { text-align:right; flex-shrink:0; }
   .item-row .subtotal { font-family:'Fraunces',serif; font-size:15px; font-weight:600; }
+  .item-row .unitario { font-size:11px; color:#8A7A74; margin-top:1px; }
   .nivel-badge {
     font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.03em;
     padding:2px 7px; border-radius:999px; display:inline-block; margin-top:3px;
@@ -97,7 +98,7 @@
   // IMPORTANT: replace with the real WhatsApp number, country code
   // first, digits only (no +, no spaces, no dashes). Example for
   // Venezuela: "584141234567".
-  const WHATSAPP_NUMBER = "58XXXXXXXXXX";
+  const WHATSAPP_NUMBER = "584124405545";
 
   const UMBRAL_MAYOR = 3;
   const UMBRAL_GRAN_MAYOR = 10;
@@ -177,6 +178,7 @@
           '</div>' +
           '<div class="precios">' +
             '<div class="subtotal">$' + linea.subtotal.toFixed(2) + '</div>' +
+            '<div class="unitario">$' + linea.precioUnitario.toFixed(2) + ' c/u × ' + item.cantidad + '</div>' +
             '<div class="nivel-badge nivel-' + linea.nivel + '">' + etiquetaNivel(linea.nivel) + '</div>' +
           '</div>' +
         '</div>';
@@ -202,7 +204,7 @@
       '<label>Entrega</label>' +
       '<div class="metodo-entrega">' +
         '<label><input type="radio" name="entrega" value="Retiro en tienda" checked /> Retiro en tienda</label>' +
-        '<label><input type="radio" name="entrega" value="Delivery en Carabobo" /> Delivery en Carabobo (aprox. 30 min)</label>' +
+        '<label><input type="radio" name="entrega" value="Delivery" /> Delivery</label>' +
         '<label><input type="radio" name="entrega" value="Envío nacional" /> Envío nacional (MRW, Zoom, Tealca...)</label>' +
       '</div>' +
       '<div id="direccionBox" style="display:none;">' +
@@ -262,7 +264,7 @@
     const cart = leerCarrito();
     const calculo = calcularCarrito(cart);
 
-    let mensaje = '¡Hola! Quiero hacer un pedido en A New Canvas Store:\n\n';
+    let mensaje = '¡Hola! Quiero hacer un pedido en Anew Canvas Store:\n\n';
     cart.forEach(function (item, i) {
       const linea = calculo.lineas[i];
       mensaje += '• ' + item.cantidad + 'x ' + item.nombre + ' (' + (item.tono || 'Único') + ') — $' + linea.subtotal.toFixed(2) + '\n';
