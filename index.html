@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>New Canvas Store — Maquillaje y Skincare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FBF6F3; --ink: #2A211F; --wine: #7A2E3A; --wine-dark: #5E2129;
+    --gold: #C9A768; --line: #E7DAD3; --error: #B23B3B; --ok: #2F6B4F;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100dvh; background:var(--bg); font-family:'Inter',sans-serif; color:var(--ink); }
+  .wrap { max-width:520px; margin:0 auto; padding:20px 16px 100px; min-height:100dvh; }
+
+  header { text-align:center; padding:12px 0 20px; }
+  .eyebrow { font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--wine); margin-bottom:6px; font-weight:600; }
+  h1 { font-family:'Fraunces',serif; font-weight:600; font-size:26px; margin:0; line-height:1.1; }
+
+  .search-box { position:relative; margin-bottom:14px; }
+  .search-box input {
+    width:100%; padding:13px 14px; border:1.5px solid var(--line); border-radius:12px;
+    font-size:15px; font-family:'Inter',sans-serif; background:#fff; color:var(--ink);
+  }
+  .search-box input:focus { outline:none; border-color:var(--wine); }
+
+  .categorias { display:flex; gap:8px; overflow-x:auto; padding-bottom:12px; margin-bottom:8px; scrollbar-width:none; }
+  .categorias::-webkit-scrollbar { display:none; }
+  .chip {
+    flex-shrink:0; padding:8px 14px; border-radius:999px; border:1.5px solid var(--line);
+    background:#fff; font-size:13px; font-weight:500; color:var(--ink); cursor:pointer; white-space:nowrap;
+  }
+  .chip.active { background:var(--wine); border-color:var(--wine); color:#fff; }
+
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px; }
+  .producto-card {
+    background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; cursor:pointer;
+    display:flex; flex-direction:column;
+  }
+  .producto-card img { width:100%; aspect-ratio:1; object-fit:cover; background:var(--line); }
+  .producto-card .info { padding:10px 12px 12px; flex:1; display:flex; flex-direction:column; }
+  .producto-card .marca { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--wine); font-weight:600; margin-bottom:2px; }
+  .producto-card .nombre { font-size:13.5px; font-weight:500; line-height:1.3; margin-bottom:6px; flex:1; }
+  .producto-card .precio { font-family:'Fraunces',serif; font-size:17px; font-weight:600; }
+
+  .empty-msg { text-align:center; font-size:13px; color:#8A7A74; padding:40px 20px; grid-column:1/-1; }
+
+  /* --- Modal de producto (tonos + agregar) --- */
+  .overlay {
+    display:none; position:fixed; inset:0; background:rgba(42,33,31,.5); z-index:20;
+    align-items:flex-end; justify-content:center;
+  }
+  .overlay.open { display:flex; }
+  .sheet {
+    background:var(--bg); width:100%; max-width:520px; border-radius:20px 20px 0 0;
+    padding:20px; max-height:85vh; overflow-y:auto;
+  }
+  .sheet img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; margin-bottom:14px; background:var(--line); }
+  .sheet .marca { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--wine); font-weight:600; }
+  .sheet h2 { font-family:'Fraunces',serif; font-size:20px; margin:4px 0 8px; }
+  .sheet .descripcion { font-size:13.5px; color:#5A4D48; line-height:1.5; margin-bottom:16px; white-space:pre-line; }
+  .tono-row {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 0; border-top:1px solid var(--line);
+  }
+  .tono-row .tono-nombre { font-size:14px; font-weight:500; }
+  .tono-row .tono-precio { font-size:13px; color:#6B5E5A; }
+  .tono-row button {
+    padding:8px 16px; border-radius:999px; border:none; background:var(--wine); color:#fff;
+    font-size:13px; font-weight:600; cursor:pointer; flex-shrink:0;
+  }
+  .cerrar-sheet {
+    display:block; margin:16px auto 0; background:none; border:none; color:#8A7A74; font-size:13px; cursor:pointer;
+  }
+
+  /* --- Barra de carrito flotante --- */
+  .cart-bar {
+    position:fixed; bottom:16px; left:16px; right:16px; max-width:488px; margin:0 auto;
+    background:var(--wine); color:#fff; border-radius:14px; padding:14px 18px;
+    display:none; align-items:center; justify-content:space-between;
+    box-shadow:0 8px 24px rgba(42,33,31,.25); text-decoration:none; font-family:'Inter',sans-serif;
+  }
+  .cart-bar.visible { display:flex; }
+  .cart-bar .izq { font-size:13px; opacity:.85; }
+  .cart-bar .der { font-family:'Fraunces',serif; font-size:16px; font-weight:600; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">Valencia, Venezuela</div>
+      <h1>New Canvas Store</h1>
+    </header>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Buscar por nombre o marca..." />
+    </div>
+
+    <div class="categorias" id="categorias"></div>
+
+    <div class="grid" id="grid">
+      <div class="empty-msg">Cargando productos...</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="sheet">
+      <img id="sheetImagen" src="" alt="" />
+      <div class="marca" id="sheetMarca"></div>
+      <h2 id="sheetNombre"></h2>
+      <div class="descripcion" id="sheetDescripcion"></div>
+      <div id="sheetTonos"></div>
+      <button class="cerrar-sheet" id="cerrarSheetBtn">Cerrar</button>
+    </div>
+  </div>
+
+  <a href="carrito.html" class="cart-bar" id="cartBar">
+    <span class="izq" id="cartBarCantidad">0 productos</span>
+    <span class="der" id="cartBarTotal">$0.00</span>
+  </a>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://pvlpawwimdbxsvgggima.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_dqOJoYPxXWIQojgdxC6IKg_jE_jhTzh";
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  const gridEl = document.getElementById('grid');
+  const categoriasEl = document.getElementById('categorias');
+  const searchInput = document.getElementById('searchInput');
+  const overlay = document.getElementById('overlay');
+  const cartBar = document.getElementById('cartBar');
+  const cartBarCantidad = document.getElementById('cartBarCantidad');
+  const cartBarTotal = document.getElementById('cartBarTotal');
+
+  let todasLasVariantes = [];
+  let categoriaActiva = 'Todas';
+
+  // --- Carrito: guardado en localStorage para que sobreviva el cambio a carrito.html ---
+  function leerCarrito() {
+    try { return JSON.parse(localStorage.getItem('carrito') || '[]'); }
+    catch (e) { return []; }
+  }
+  function guardarCarrito(cart) {
+    localStorage.setItem('carrito', JSON.stringify(cart));
+    actualizarBarraCarrito(cart);
+  }
+  function actualizarBarraCarrito(cart) {
+    const cantidad = cart.reduce(function (sum, item) { return sum + item.cantidad; }, 0);
+    const total = cart.reduce(function (sum, item) { return sum + item.cantidad * item.precio_detal; }, 0);
+    if (cantidad === 0) {
+      cartBar.classList.remove('visible');
+      return;
+    }
+    cartBar.classList.add('visible');
+    cartBarCantidad.textContent = cantidad + (cantidad === 1 ? ' producto' : ' productos');
+    cartBarTotal.textContent = '$' + total.toFixed(2);
+  }
+
+  function agregarAlCarrito(variante, cantidad) {
+    const cart = leerCarrito();
+    const existente = cart.find(function (item) { return item.variante_id === variante.variante_id; });
+    if (existente) {
+      existente.cantidad += cantidad;
+    } else {
+      cart.push({
+        variante_id: variante.variante_id,
+        producto_id: variante.producto_id,
+        nombre: variante.nombre,
+        marca: variante.marca,
+        tono: variante.tono,
+        imagen_url: variante.imagen_tono_url || variante.imagen_url,
+        precio_detal: variante.precio_detal,
+        precio_mayor: variante.precio_mayor,
+        precio_gran_mayor: variante.precio_gran_mayor,
+        umbral_mayor: variante.umbral_mayor,
+        umbral_gran_mayor: variante.umbral_gran_mayor,
+        cantidad: cantidad
+      });
+    }
+    guardarCarrito(cart);
+  }
+
+  // --- Cargar catálogo ---
+  async function cargarCatalogo() {
+    const { data, error } = await supabaseClient
+      .from('catalogo_publico')
+      .select('*')
+      .order('nombre', { ascending: true });
+
+    if (error) {
+      gridEl.innerHTML = '<div class="empty-msg">No se pudo cargar el catálogo. Intenta recargar la página.</div>';
+      return;
+    }
+
+    todasLasVariantes = data || [];
+    construirCategorias();
+    renderGrid();
+    actualizarBarraCarrito(leerCarrito());
+  }
+
+  function construirCategorias() {
+    const categorias = Array.from(new Set(
+      todasLasVariantes.map(function (v) { return v.categoria; }).filter(Boolean)
+    )).sort();
+
+    categoriasEl.innerHTML = '';
+    ['Todas'].concat(categorias).forEach(function (cat) {
+      const chip = document.createElement('button');
+      chip.className = 'chip' + (cat === categoriaActiva ? ' active' : '');
+      chip.textContent = cat;
+      chip.addEventListener('click', function () {
+        categoriaActiva = cat;
+        document.querySelectorAll('.chip').forEach(function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        renderGrid();
+      });
+      categoriasEl.appendChild(chip);
+    });
+  }
+
+  function agruparPorProducto(variantes) {
+    const grupos = {};
+    variantes.forEach(function (v) {
+      if (!grupos[v.producto_id]) grupos[v.producto_id] = [];
+      grupos[v.producto_id].push(v);
+    });
+    return Object.values(grupos);
+  }
+
+  function renderGrid() {
+    const termino = searchInput.value.trim().toLowerCase();
+
+    let filtradas = todasLasVariantes;
+    if (categoriaActiva !== 'Todas') {
+      filtradas = filtradas.filter(function (v) { return v.categoria === categoriaActiva; });
+    }
+    if (termino) {
+      filtradas = filtradas.filter(function (v) {
+        return (v.nombre || '').toLowerCase().includes(termino) ||
+               (v.marca || '').toLowerCase().includes(termino);
+      });
+    }
+
+    const grupos = agruparPorProducto(filtradas);
+
+    if (grupos.length === 0) {
+      gridEl.innerHTML = '<div class="empty-msg">No encontramos productos con esa búsqueda.</div>';
+      return;
+    }
+
+    gridEl.innerHTML = '';
+    grupos.forEach(function (tonos) {
+      const principal = tonos[0];
+      const card = document.createElement('div');
+      card.className = 'producto-card';
+      card.innerHTML =
+        '<img src="' + (principal.imagen_url || '') + '" alt="' + principal.nombre + '" loading="lazy" />' +
+        '<div class="info">' +
+          (principal.marca ? '<div class="marca">' + principal.marca + '</div>' : '') +
+          '<div class="nombre">' + principal.nombre + '</div>' +
+          '<div class="precio">$' + Number(principal.precio_detal).toFixed(2) + '</div>' +
+        '</div>';
+      card.addEventListener('click', function () { abrirSheet(tonos); });
+      gridEl.appendChild(card);
+    });
+  }
+
+  // --- Modal de producto: elegir tono y cantidad ---
+  function abrirSheet(tonos) {
+    const principal = tonos[0];
+    document.getElementById('sheetImagen').src = principal.imagen_url || '';
+    document.getElementById('sheetMarca').textContent = principal.marca || '';
+    document.getElementById('sheetNombre').textContent = principal.nombre;
+    document.getElementById('sheetDescripcion').textContent = principal.descripcion || '';
+
+    const tonosEl = document.getElementById('sheetTonos');
+    tonosEl.innerHTML = '';
+    const cart = leerCarrito();
+
+    tonos.forEach(function (v) {
+      const enCarrito = cart.find(function (i) { return i.variante_id === v.variante_id; });
+      const row = document.createElement('div');
+      row.className = 'tono-row';
+      row.innerHTML =
+        '<div>' +
+          '<div class="tono-nombre">' + (v.tono || 'Único') + '</div>' +
+          '<div class="tono-precio">$' + Number(v.precio_detal).toFixed(2) + '</div>' +
+        '</div>' +
+        '<button type="button">' + (enCarrito ? 'En el carrito (' + enCarrito.cantidad + ')' : 'Agregar') + '</button>';
+
+      row.querySelector('button').addEventListener('click', function () {
+        agregarAlCarrito(v, 1);
+        abrirSheet(tonos); // re-render para mostrar la cantidad actualizada
+      });
+      tonosEl.appendChild(row);
+    });
+
+    overlay.classList.add('open');
+  }
+
+  document.getElementById('cerrarSheetBtn').addEventListener('click', function () {
+    overlay.classList.remove('open');
+  });
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+
+  searchInput.addEventListener('input', renderGrid);
+
+  cargarCatalogo();
+</script>
+</body>
+</html>
