@@ -20,12 +20,20 @@
   @keyframes popIn { 0% { transform:scale(1); } 40% { transform:scale(1.18); } 100% { transform:scale(1); } }
   @keyframes shimmer { 0% { background-position:-200px 0; } 100% { background-position:200px 0; } }
 
-  header { text-align:center; padding:16px 0 20px; }
+  header { text-align:center; padding:16px 0 14px; }
   .logo { width:104px; height:104px; border-radius:22px; box-shadow:0 6px 18px rgba(2,24,128,.22); margin-bottom:10px; }
   .eyebrow { font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--wine); margin-bottom:6px; font-weight:600; }
   h1 { font-family:'Fraunces',serif; font-weight:600; font-size:26px; margin:0; line-height:1.1; }
 
-  .search-box { position:relative; margin-bottom:14px; }
+  .banner {
+    background:linear-gradient(135deg, #2686F5 0%, var(--wine-dark) 100%);
+    border-radius:16px; padding:16px 18px; margin-bottom:16px; color:#fff; text-align:center;
+    box-shadow:0 8px 20px rgba(2,24,128,.18);
+  }
+  .banner strong { font-family:'Fraunces',serif; font-size:16px; display:block; margin-bottom:2px; }
+  .banner span { font-size:12.5px; opacity:.9; }
+
+  .search-box { position:relative; margin-bottom:12px; }
   .search-box input {
     width:100%; padding:13px 14px; border:1.5px solid var(--line); border-radius:12px;
     font-size:15px; font-family:'Inter',sans-serif; background:#fff; color:var(--ink);
@@ -33,15 +41,44 @@
   }
   .search-box input:focus { outline:none; border-color:var(--wine); }
 
-  .categorias { display:flex; gap:8px; overflow-x:auto; padding-bottom:12px; margin-bottom:8px; scrollbar-width:none; }
-  .categorias::-webkit-scrollbar { display:none; }
-  .chip {
-    flex-shrink:0; padding:8px 14px; border-radius:999px; border:1.5px solid var(--line);
-    background:#fff; font-size:13px; font-weight:500; color:var(--ink); cursor:pointer; white-space:nowrap;
-    transition:background-color .18s ease, border-color .18s ease, color .18s ease, transform .1s ease;
+  .categoria-selector {
+    display:flex; align-items:center; gap:8px; margin-bottom:14px;
   }
-  .chip:active { transform:scale(.94); }
-  .chip.active { background:var(--wine); border-color:var(--wine); color:#fff; }
+  .btn-categorias {
+    display:flex; align-items:center; gap:6px; padding:10px 14px; border-radius:10px;
+    border:1.5px solid var(--line); background:#fff; color:var(--ink); font-size:13.5px; font-weight:600;
+    cursor:pointer; transition:transform .1s ease;
+  }
+  .btn-categorias:active { transform:scale(.96); }
+  .btn-categorias .flecha { font-size:10px; color:var(--wine); }
+  .categoria-chip-activa {
+    display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:999px;
+    background:var(--wine); color:#fff; font-size:12.5px; font-weight:600; animation:fadeIn .2s ease;
+  }
+  .categoria-chip-activa button { background:none; border:none; color:#fff; font-size:13px; cursor:pointer; padding:0; line-height:1; opacity:.85; }
+
+  .cat-overlay {
+    display:flex; position:fixed; inset:0; background:rgba(11,20,64,0); z-index:25;
+    align-items:flex-end; justify-content:center; pointer-events:none; transition:background-color .22s ease;
+  }
+  .cat-overlay.open { background:rgba(11,20,64,.55); pointer-events:auto; }
+  .cat-sheet {
+    background:var(--bg); width:100%; max-width:520px; border-radius:20px 20px 0 0;
+    padding:20px; max-height:80vh; overflow-y:auto;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.22,.68,0,1.1);
+  }
+  .cat-overlay.open .cat-sheet { transform:translateY(0); }
+  .cat-sheet h2 { font-family:'Fraunces',serif; font-size:18px; margin:0 0 14px; }
+  .cat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .cat-grid button {
+    text-align:left; padding:12px 14px; border-radius:10px; border:1.5px solid var(--line);
+    background:#fff; color:var(--ink); font-size:13.5px; font-weight:500; cursor:pointer;
+    transition:background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .cat-grid button.active { background:var(--wine); border-color:var(--wine); color:#fff; }
+  .cerrar-cat-sheet {
+    display:block; margin:16px auto 0; background:none; border:none; color:#8A7A74; font-size:13px; cursor:pointer;
+  }
 
   .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px; animation:fadeIn .25s ease; }
   .producto-card {
@@ -147,16 +184,29 @@
       <div class="eyebrow">Valencia, Venezuela</div>
     </header>
 
+    <div class="banner">
+      <strong>¡Vendemos al mayor y al detal!</strong>
+      <span>Descuentos automáticos según la cantidad que agregues al carrito</span>
+    </div>
+
     <div class="search-box">
       <input type="text" id="searchInput" placeholder="Buscar por nombre o marca..." />
     </div>
 
-    <div class="categorias" id="categorias"></div>
+    <div class="categoria-selector" id="categoriaSelector"></div>
 
     <div class="grid" id="grid"></div>
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <div class="cat-overlay" id="catOverlay">
+    <div class="cat-sheet">
+      <h2>Categorías</h2>
+      <div class="cat-grid" id="catGrid"></div>
+      <button class="cerrar-cat-sheet" id="cerrarCatSheetBtn">Cerrar</button>
+    </div>
+  </div>
 
 
   <div class="overlay" id="overlay">
@@ -183,7 +233,9 @@
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
   const gridEl = document.getElementById('grid');
-  const categoriasEl = document.getElementById('categorias');
+  const categoriaSelector = document.getElementById('categoriaSelector');
+  const catOverlay = document.getElementById('catOverlay');
+  const catGrid = document.getElementById('catGrid');
   const searchInput = document.getElementById('searchInput');
   const overlay = document.getElementById('overlay');
   const cartBar = document.getElementById('cartBar');
@@ -296,19 +348,44 @@
       todasLasVariantes.map(function (v) { return v.categoria; }).filter(Boolean)
     )).sort();
 
-    categoriasEl.innerHTML = '';
+    // La ventana con todas las categorías, en cuadrícula
+    catGrid.innerHTML = '';
     ['Todas'].concat(categorias).forEach(function (cat) {
-      const chip = document.createElement('button');
-      chip.className = 'chip' + (cat === categoriaActiva ? ' active' : '');
-      chip.textContent = cat;
-      chip.addEventListener('click', function () {
+      const btn = document.createElement('button');
+      btn.className = cat === categoriaActiva ? 'active' : '';
+      btn.textContent = cat;
+      btn.addEventListener('click', function () {
         categoriaActiva = cat;
-        document.querySelectorAll('.chip').forEach(function (c) { c.classList.remove('active'); });
-        chip.classList.add('active');
+        renderSelectorCategoria();
+        renderGrid();
+        catOverlay.classList.remove('open');
+      });
+      catGrid.appendChild(btn);
+    });
+
+    renderSelectorCategoria();
+  }
+
+  // El botón "Categorías" de arriba, más un chip mostrando la
+  // categoría elegida (con su X para volver a "Todas") cuando aplica.
+  function renderSelectorCategoria() {
+    categoriaSelector.innerHTML =
+      '<button type="button" class="btn-categorias" id="abrirCatBtn">Categorías <span class="flecha">▾</span></button>' +
+      (categoriaActiva !== 'Todas'
+        ? '<span class="categoria-chip-activa">' + categoriaActiva + '<button type="button" id="quitarCatBtn">✕</button></span>'
+        : '');
+
+    document.getElementById('abrirCatBtn').addEventListener('click', function () {
+      catOverlay.classList.add('open');
+    });
+    const quitarBtn = document.getElementById('quitarCatBtn');
+    if (quitarBtn) {
+      quitarBtn.addEventListener('click', function () {
+        categoriaActiva = 'Todas';
+        construirCategorias();
         renderGrid();
       });
-      categoriasEl.appendChild(chip);
-    });
+    }
   }
 
   function agruparPorProducto(variantes) {
@@ -422,6 +499,13 @@
   });
   overlay.addEventListener('click', function (e) {
     if (e.target === overlay) overlay.classList.remove('open');
+  });
+
+  document.getElementById('cerrarCatSheetBtn').addEventListener('click', function () {
+    catOverlay.classList.remove('open');
+  });
+  catOverlay.addEventListener('click', function (e) {
+    if (e.target === catOverlay) catOverlay.classList.remove('open');
   });
 
   searchInput.addEventListener('input', renderGrid);
